@@ -1,0 +1,40 @@
+name: Release
+
+# Cut a release: tag a commit `vX.Y.Z` and push the tag. CI builds a universal
+# (arm64 + x86_64) .app, zips it, and attaches it to the GitHub Release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write   # create the release + upload the asset
+
+jobs:
+  release:
+    runs-on: macos-14   # Apple Silicon runner with full Xcode (needed for universal)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select latest Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Derive version from tag
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build universal app + zip
+        env:
+          UNIVERSAL: "1"   # make-app.sh builds arm64 + x86_64
+        run: ./scripts/make-zip.sh "${{ steps.ver.outputs.version }}"
+
+      - name: Verify the binary is universal
+        run: lipo -archs "dist/ClaudeUsageMeter.app/Contents/MacOS/ClaudeUsageMeter"
+
+      - name: Publish release with the zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            "dist/ClaudeUsageMeter-${{ steps.ver.outputs.version }}.zip" \
+            --title "ClaudeUsageMeter ${GITHUB_REF_NAME}" \
+            --notes "Download the zip, unzip, drag ClaudeUsageMeter.app to /Applications. First launch: right-click the app → Open → Open. Requires macOS 13+ and Claude Code signed in."

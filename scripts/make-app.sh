@@ -15,9 +15,15 @@ VERSION="${1:-0.1.0}"
 APPDIR="dist/${APP}.app"
 CONTENTS="${APPDIR}/Contents"
 
-echo "[1/4] building release binary"
-swift build -c release
-BIN="$(swift build -c release --show-bin-path)/${APP}"
+ARCHFLAGS=()
+if [ "${UNIVERSAL:-0}" = "1" ]; then
+  ARCHFLAGS=(--arch arm64 --arch x86_64)
+  echo "[1/4] building universal release binary (arm64 + x86_64)"
+else
+  echo "[1/4] building release binary (native arch)"
+fi
+swift build -c release "${ARCHFLAGS[@]}"
+BIN="$(swift build -c release "${ARCHFLAGS[@]}" --show-bin-path)/${APP}"
 
 echo "[2/4] assembling ${APPDIR}"
 rm -rf "${APPDIR}"
