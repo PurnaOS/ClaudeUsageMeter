@@ -94,4 +94,19 @@ check(Pace.hot.label == "Burning hot", "pace label")
 check(LoginItem.menuTitle(enabled: false) == "Launch at login", "login title off")
 check(LoginItem.menuTitle(enabled: true) == "Disable launch at login", "login title on")
 
+// NFR-0002: cache round-trips a snapshot so a cold start isn't blank.
+let cacheURL = URL(fileURLWithPath: NSTemporaryDirectory())
+    .appendingPathComponent("cache-\(UUID().uuidString).json")
+defer { try? FileManager.default.removeItem(at: cacheURL) }
+check(UsageCache.load(from: cacheURL) == nil, "missing cache loads nil")
+let toCache = CachedUsage(snapshot: g, fetchedAt: Date(timeIntervalSince1970: 1_700_000_000))
+UsageCache.save(toCache, to: cacheURL)
+let loaded = UsageCache.load(from: cacheURL)
+check(loaded == toCache, "cache round-trips snapshot + fetchedAt")
+check(loaded?.snapshot.fiveHour.usedPercentage == 66.6, "cached percent intact")
+
+// NFR-0002: errors map to a human line, not a silent blank.
+check(UsageError.http(429).userMessage == "Rate limited — retrying", "429 message")
+check(UsageError.noOAuthToken.userMessage == "Sign in to Claude Code", "no-token message")
+
 print("ok: all UsageCore checks passed")

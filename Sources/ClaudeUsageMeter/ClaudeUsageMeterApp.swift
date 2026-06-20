@@ -12,7 +12,9 @@ struct ClaudeUsageMeterApp: App {
     var body: some Scene {
         MenuBarExtra {
             VStack(alignment: .leading, spacing: 8) {
-                UsageDetailView(snapshot: model.snapshot)
+                UsageDetailView(snapshot: model.snapshot,
+                                status: model.status,
+                                fetchedAt: model.fetchedAt)
                 Divider()
                 VStack(spacing: 1) {
                     FooterButton(title: LoginItemController.menuTitle, systemImage: "power") {
@@ -47,25 +49,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @MainActor
 final class UsageModel: ObservableObject {
     @Published var snapshot: UsageSnapshot?
+    @Published var fetchedAt: Date?       // when `snapshot` was last fetched
+    @Published var status: String = ""    // non-empty = current trouble (e.g. rate limited)
+
     private let client = UsageClient()
     private var timer: Timer?
-
-    // ponytail: 60s poll. The endpoint is 429-rate-limited; if that bites,
-    // back off and serve the last good value (NFR-0002 cache lives here later).
-    private let interval: TimeInterval = 60
+    private let interval: TimeInterval = 60     // normal poll
+    private let retryInterval: TimeInterval = 30 // sooner re-try after an error
 
     var title: String { Glance.menuBarTitle(for: snapshot) }
 
     init() {
+        // Show the last good reading instantly on launch (NFR-0002), even before
+        // the first network call — and survive a cold start during a 429.
+        if let cached = UsageCache.load() {
+            snapshot = cached.snapshot
+            fetchedAt = cached.fetchedAt
+        }
         Task { await refresh() }
-        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+        schedule(interval)
+    }
+
+    private func schedule(_ after: TimeInterval) {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: after, repeats: false) { [weak self] _ in
             Task { await self?.refresh() }
         }
     }
 
     func refresh() async {
-        // On any error keep the previous value if we had one, else stay nil →
-        // the glance shows the unavailable marker.
-        snapshot = (try? await client.fetch()) ?? snapshot
+        do {
+            let snap = try await client.fetch()
+            let now = Date()
+            snapshot = snap; fetchedAt = now; status = ""
+            UsageCache.save(CachedUsage(snapshot: snap, fetchedAt: now))
+            schedule(interval)
+        } catch {
+            // Keep showing the last good value; surface why, retry sooner.
+            status = (error as? UsageError)?.userMessage ?? "Offline — retrying"
+            schedule(retryInterval)
+        }
     }
 }

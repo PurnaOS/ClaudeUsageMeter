@@ -6,19 +6,34 @@ import MeterUI
 /// time-elapsed%, the pace between them, and time-to-reset.
 struct UsageDetailView: View {
     let snapshot: UsageSnapshot?
+    var status: String = ""
+    var fetchedAt: Date? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 8) {
                 GaugeLogo().frame(width: 22, height: 22)
                 Text("Claude Code usage").font(.headline)
+                Spacer()
+                if let at = fetchedAt {
+                    Text(at, format: .relative(presentation: .numeric))
+                        .font(.caption2).foregroundStyle(.tertiary)
+                }
             }
 
             if let snap = snapshot {
                 WindowCard(name: "5-hour", window: snap.fiveHour, span: WindowSpan.fiveHour)
                 WindowCard(name: "Weekly", window: snap.sevenDay, span: WindowSpan.sevenDay)
+                if !status.isEmpty {
+                    // Showing cached numbers while the live call is failing.
+                    Label(status, systemImage: "arrow.triangle.2.circlepath")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             } else {
-                Label("Usage unavailable", systemImage: "exclamationmark.triangle")
+                // No reading yet — say why, not a generic "unavailable".
+                Label(status.isEmpty ? "Loading…" : status,
+                      systemImage: status.contains("Sign in") ? "person.crop.circle.badge.exclamationmark"
+                                 : "arrow.triangle.2.circlepath")
                     .foregroundStyle(.secondary)
                     .padding(.vertical, 8)
             }

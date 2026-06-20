@@ -22,8 +22,8 @@ if [ "${UNIVERSAL:-0}" = "1" ]; then
 else
   echo "[1/4] building release binary (native arch)"
 fi
-swift build -c release "${ARCHFLAGS[@]}"
-BIN="$(swift build -c release "${ARCHFLAGS[@]}" --show-bin-path)/${APP}"
+swift build -c release ${ARCHFLAGS[@]+"${ARCHFLAGS[@]}"}
+BIN="$(swift build -c release ${ARCHFLAGS[@]+"${ARCHFLAGS[@]}"} --show-bin-path)/${APP}"
 
 echo "[2/4] assembling ${APPDIR}"
 rm -rf "${APPDIR}"
