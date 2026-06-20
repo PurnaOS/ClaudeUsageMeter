@@ -3,7 +3,7 @@ type: Story
 id: STORY-003
 title: Run always-on and launch at login
 owner: Srini Raju
-status: in_review
+status: done
 priority: should
 links:
   parent: [/work/epic-001.md]

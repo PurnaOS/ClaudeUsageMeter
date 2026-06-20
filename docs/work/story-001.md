@@ -3,7 +3,7 @@ type: Story
 id: STORY-001
 title: Acquire usage and show percent in the menu bar
 owner: Srini Raju
-status: in_review
+status: done
 priority: must
 links:
   parent: [/work/epic-001.md]

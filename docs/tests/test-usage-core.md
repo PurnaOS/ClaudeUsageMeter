@@ -5,7 +5,7 @@ title: UsageCore parse / select / format / token checks
 owner: Srini Raju
 status: passing
 links:
-  verifies: [/requirements/fr-0001.md, /requirements/fr-0002.md, /requirements/fr-0003.md, /requirements/fr-0004.md, /requirements/fr-0005.md, /requirements/fr-0006.md]
+  verifies: [/requirements/fr-0001.md, /requirements/fr-0002.md, /requirements/fr-0003.md, /requirements/fr-0004.md, /requirements/fr-0005.md, /requirements/fr-0006.md, /requirements/nfr-0002.md]
 ---
 
 # TEST-usage-core

@@ -3,7 +3,7 @@ type: Initiative
 id: INIT-001
 title: Claude Code usage meter for macOS
 owner: Srini Raju
-status: proposed
+status: active
 priority: must
 links:
   traces_to: [/requirements/br-0001.md, /requirements/br-0002.md, /requirements/br-0003.md]
